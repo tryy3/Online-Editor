@@ -7,8 +7,15 @@
 	# Author: tryy3 #####
 	# Credits: bonney12 #
 	#####################
-	
 
+
+	# Just a some Variables that need to be used later!
+
+	$currentPathIsDir = false;
+	$filePath = "";
+	$config = parse_ini_file("Config/general.ini", true);
+	$extensionConfig = parse_ini_file("Config/extension.ini", true);
+	
 	
 	#############################################################################################################
 	# Debug function ############################################################################################
@@ -81,10 +88,180 @@
 	}
 
 
-	# Just a some Variables that need to be used later!
+	function renameFile($file, $name)
+	{
 
-	$currentPathIsDir = false;
-	$filePath = "";
+
+		# Checks if the file $name exist!
+		# If it does exist then send an error and return (to kill the function)!
+		# If it doesn't exist then continue with the process!
+
+		if (file_exists($folderPath . "/" . $name))
+		{
+			error($file . " already exists!!!");
+			return;
+		}
+
+
+		# Checks if the file $file doesn't exist!
+		# If it doesn't exist then send an error and return (to kill the function)!
+		# If it does exist then continue with the process!
+
+		if (!file_exists($folderPath . "/" . $file))
+		{
+			error($name . " does not exists!!!");
+			return;
+		}
+
+
+		# Rename's the file and sends a success message!
+
+		rename($folderPath . "/" . $file, $folderPath . "/" , $name);
+
+		echo '<div class="alert alert-success"> SUCCESS!!! <br>';
+		echo 'Renamed file ' . $file . ' to ' . $name . '!';
+		echo '<div>';
+	}
+
+	function deleteFile($file)
+	{
+
+
+		# Checks if the file doesn't exist!
+		# If it doesn't exists then send an error!
+		# Else continue with the deleting process!
+
+		if(!file_exists($folderPath . "/" . $file))
+		{
+			error("File does not exists!!!");
+			return;
+		}
+
+
+		# Unlink the file (unlink will make the system forget about the file, aka delete it)!
+
+		unlink($folderPath . "/" . $file);
+	}
+
+	function createFile($file)
+	{
+
+
+		# Checks if the fileyou want to create already exists!
+		# If it exists then send an error!
+		# If it doesn't exists then continue with the creation process!
+
+		if(file_exists($folderPath . "/" . $file))
+		{
+			error("File already exists!!!");
+			return;
+		}
+
+
+		# Open a file handler (if the file doesn't exists it will automatically create a file)
+		# when the handler is open, close it to save the file and send a success alert!
+
+		$createHandle = fopen($folderPath . "/" . $file, "w");
+		fclose($createHandle);
+
+		echo '<div class="alert alert-success"> SUCCESS!!! <br>';
+		echo 'Created file ' . $file . "!";
+		echo '</div>';
+	}
+
+	function uploadFile($file, $customFileName = "")
+	{
+
+
+		# Checks if there were any errors uploading the file,
+		# if there were, it will send the error message to the error function and return to kill the function!
+		# else it will continue with the uploading process
+
+		if($file["error"] > 0)
+		{
+			error($file["error"]);
+			return;
+		}
+		else
+		{
+
+
+			# Adds the $fileSize variable so people don't upload files that are too big, default 5gb!
+
+			$fileSize = $config["General"]["SizeFile"];
+
+
+			# Checks the uploaded file size if its less then $fileSize!
+			# Else it continue with the uploading process!
+
+			if($file["size"] > $fileSize)
+			{
+				error("File is too large!");
+				return;
+			}
+			else
+			{
+
+
+				# Checks if the users custom name isn't empty!
+				# If it isn't empty it will use the $customFileName
+				# If it is empty it will use $file["name"]
+
+				if($customFileName != "")
+				{
+
+
+					# Checks if the file exists or not!
+					# If it exists, send an error!
+					# If it doesn't exists, then move the file temporarly to the folder the user is in
+					# and name the file after $customFileName
+
+					if(file_exists($folderPath . "/" . $customFileName))
+					{
+						error("File already exists!!!");
+						return;
+					}
+					else
+					{
+						move_uploaded_file($file["tmp_name"], $folderPath . "/" . $customFileName);
+					}
+				}
+				else
+				{
+
+
+					# Checks if the file exists or not!
+					# If it exists, send an error!
+					# If it doesn't exists, then move the file temporarly to the folder the user is in
+					# and name the file after $file["name"]
+
+					if(file_exists($folderPath . "/" . $file["name"]))
+					{
+						error("File already exists!!!");
+						return;
+					}
+					else
+					{
+						move_uploaded_file($file["tmp_name"], $folderPath . "/" . $file["name"]);
+						$customFileName = $file["name"];
+					}
+				}
+			}
+		}
+
+		#Outputs a success message with some information about the uploaded file!
+
+		echo '<div class="alert alert-success"> SUCCESS!!! <br>';
+		echo 'File uploaded! <br>';
+		echo 'Name: ' . $customFileName . '<br>';
+		echo 'Size: ' - $file["size"] . '<br>';
+		echo '</div>';
+	}
+
+	function downloadFile($file)
+	{
+		
+	}
 
 
 	# Checks if the file is in a different folder to the current one
@@ -94,11 +271,11 @@
 	if (isset($_GET["file"]) && $_GET != "")
 	{
 		$filePath = $_GET["file"];
-		$folderPath = "/home/ExpandHosting/www" . $filePath;
+		$folderPath = $config["General"]["Path"] . $filePath;
 	}
 	else
 	{
-		$folderPath = "/home/ExpandHosting/www";
+		$folderPath = $config["General"]["Path"];
 	}
 
 
@@ -110,230 +287,53 @@
 	{
 
 
-		# Adds a variable in case there is an error
+		# Checks if the user has set an upload name, and if it's empty!
+		# If it isn't empty and it is set, execute the upload function with the upload name and the uploaded file!
+		# If it is empty or if it ISN'T set, execute the upload function with the uploaded file only!
 
-		$error = false;
-
-
-		# Checks if there were any errors uploading the file,
-		# if there were, it will send the error message to the error function and set $error to true
-		# else it will continue with the uploading process
-
-		if($_FILES["uploadfield"]["error"] > 0)
+		if(isset($_POST["uploadname"]) && $_POST["uploadname"] != "")
 		{
-			error($_FILES["uploadfield"]["error"]);
-			$error = true;
+			uploadFile($_FILES["uploadfield"], $_POST["uploadname"]);
 		}
 		else
 		{
-
-
-			# Sets the $file variable so I don't need to type $_FILES["uploadfield"] all the time!
-			# Adds the $fileSize variable so people don't upload files that are too big, default 5gb!
-
-			$file = $_FILES["uploadfield"];
-			$fileSize = pow(1024, 3) * 5;
-
-
-			# Checks the uploaded file size if its less then $fileSize!
-			# Else it continue wit the uploading process!
-
-			if ($file["size"] > $fileSize)
-			{
-				error("File is too large!");
-				$error = true;
-			}
-			else
-			{
-
-
-				# Adds the variable $customFileName so that it can output the file name even if they set a custom name or not!
-
-				$customFileName = "";
-
-
-				# Checks if the user set a upload name and if its empty!
-				# If its set and not empty it will change the uploaded name to name that the user wants!
-				# Else it will use the uploaded files name!
-
-				if(isset($_POST["uploadname"]) && $_POST["uploadname"] != "")
-				{
-
-
-					# Checks if the file exists or not!
-					# If it exists, send an error!
-					# If it doesn't exist then move the file temporarily to the folder the user is in
-					# and name the file as the user specified
-
-					if(file_exists($folderPath . "/" . $_POST["uploadname"]))
-					{
-						error("File already exists!!!");
-						$error = true;
-					}
-					else
-					{
-						move_uploaded_file($file["tmp_name"], $folderPath . "/" . $_POST["uploadname"]);
-						$customFileName = $_POST["uploadname"];
-					}
-				}
-				else
-				{
-
-
-					# Checks if the file exists or not!
-					# If it exists, send an error!
-					# If it doesn't exist then move the file temporarily to the folder the user in
-					# and name the file as the user specified
-					if (file_exists($folderPath . "/" . $file["name"]))
-					{
-						error("File already exists!!!");
-						$error = true;
-					}
-					else
-					{
-						move_uploaded_file($file["tmp_name"], $folderPath . "/" . $file["name"]);
-						$customFileName = $file["name"];
-					}
-				}
-
-
-				# Checks if there are no errors!
-				# If there is an error then just don't do anything because there should already be an error popping up!
-				# If there is no error then output a success alert with some information about the file (currently only the name and the file size)!
-
-				if(!$error)
-				{
-					echo '<div class="alert alert-success"> SUCCESS!!! <br>';
-					echo "File uploaded! <br>";
-					echo 'Name: ' . $customFileName . "<br>";
-					echo 'Size: ' . $file["size"];
-					echo "</div>";
-				}
-			}
+			uploadFile($_FILES["uploadfield"]);
 		}
+
 	}
 
 
 	# The start of the rename process!
 	#
 	# Checks if the renameFile and renameName key is in the global variable $_POST
+	# If they are both set then run the renameFile() function;
 
 	if (isset($_POST["renameFile"]) && isset($_POST["renameName"]))
 	{
-
-
-		# Sets some variables to replace the use of $_POST
-
-		$file = $_POST["renameFile"];
-		$fileName = $_POST["renameName"];
-
-
-		# Sets the error variable so I can cancel the process more easily!
-
-		$error = false;
-
-
-		# Checks if the file $fileName exists!
-		# If it does exist then send an error and set $error to true!
-		# if it doesn't exist then continue with the process!
-
-		if(file_exists($folderPath . "/" . $fileName))
-		{
-			error($fileName . " already exists!!!");
-			$error = true;
-		}
-
-
-		# Checks if $file doesn't exist!
-		# If it does exist then just continue with the process!
-		# If it doesn't exist then send an error and set $error to true!
-
-		if(!file_exists($folderPath . "/" . $file))
-		{
-			error($file . " does not exist!!!");
-			$error = true;
-		}
-
-
-		# Checks if there were any errors!
-		# If there were no errors, then rename the file and send a success alert!
-		# If there were errors then don't do anything, because there should already be errors popping up!
-
-		if(!$error)
-		{
-			rename($folderPath . "/" . $file, $folderPath . "/" . $fileName);
-
-			echo '<div class="alert alert-success"> SUCCESS!!! <br>';
-			echo "Renamed file " . $file . " to " . $fileName . "!";
-			echo '</div>';
-		}
+		renameFile($_POST["renameFile"], $_POST["renameName"]);
 	}
 
 
 	# The start of the file creation process!
 	#
-	# Checks if the createFile key is in the global variable $_POST
+	# Checks if the createFile key is in the global variable $_POST!
+	# If it is set then run createFile()!
 
 	if (isset($_POST["createFile"]))
 	{
-
-
-		# Sets a variable for the createFile key, to make it easier for us!
-
-		$file = $_POST["createFile"];
-
-
-		# Checks if the file you want to create already exists!
-		# If it exists then send an error!
-		# if not then continue with the creation process!
-
-		if(file_exists($folderPath . "/" . $file))
-		{
-			error("File already exists!!!");
-		}
-
-
-		# If there were no errors above, then, open a file handler (if the file doesn't exist it will automatically create a file)
-		# when the handler is open, close it to save the file and send a success alert!
-
-		else
-		{
-			$createHandle = fopen($folderPath . "/" . $file, "w");
-			fclose($createHandle);
-
-			echo '<div class="alert alert-success"> SUCCESS!!! <br>';
-			echo "Created file " . $file . "!";
-			echo '</div>';
-		}
+		createFile($_POST["createFile"]);
 	} 
 
 
 
 	# The start of file removal process!
 	#
-	# Checks if the key deleteFile is in the global variable $_POST
+	# Checks if the key deleteFile is in the global variable $_POST!
+	# If it is set then run deleteFile()!
 
 	if (isset($_POST["deleteFile"]))
 	{
-
-
-		# Sets a variable to make it easier to work with
-
-		$file = $_POST["deleteFile"];
-
-
-		# Checks if the file doesn't exist!
-		# If it doesn't exist then send an error!
-		# If it does exist then unlink the file (unlink will make the system forget about the file, aka delete it)!
-
-		if(!file_exists($folderPath . "/" . $file))
-		{
-			error("File does not exist!!!");
-		}
-		else
-		{
-			unlink($folderPath . "/" . $file);
-		}
+		deleteFile($_POST["deleteFile"]);
 	}
 
 
@@ -445,13 +445,9 @@
 	{
 		$fileContext = file($folderPath);
 
-		$imageExtension = array("png", "jpg", "jpeg", "ico",
-								"gif", "bmp", "tiff", "svg"
-								);
+		$imageExtension = $extensionConfig["image"]["img"];
 
-		$downloadExtension = array("zip", "jar", "rar", "pdf",
-								   "avi", "ai"
-								   );
+		$downloadExtension = $extensionConfig["download"]["dl"];
 	}
 
 ?>
