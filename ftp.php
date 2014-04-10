@@ -458,13 +458,6 @@
 
 		<!-- Just some css stuff -->
 
-		<style type="text/css">
-			body
-			{
-				background-color:grey;
-				color:white;
-			}
-		</style>
 		<?php include("lib/css.php"); ?>
 	</head>
 	<body>
