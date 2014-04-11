@@ -144,6 +144,10 @@
 		# Unlink the file (unlink will make the system forget about the file, aka delete it)!
 
 		unlink($folderPath . "/" . $file);
+
+		echo '<div class="alert alert-success"> SUCCESS!!! <br>';
+		echo 'Deleted ' . $file;
+		echo '</div>';
 	}
 
 	function createFile($file)
