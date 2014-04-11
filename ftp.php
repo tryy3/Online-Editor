@@ -91,6 +91,7 @@
 	function renameFile($file, $name)
 	{
 
+		global $config, $folderPath;
 
 		# Checks if the file $name exist!
 		# If it does exist then send an error and return (to kill the function)!
@@ -98,7 +99,7 @@
 
 		if (file_exists($folderPath . "/" . $name))
 		{
-			error($file . " already exists!!!");
+			error($name . " already exists!!!");
 			return;
 		}
 
@@ -109,22 +110,24 @@
 
 		if (!file_exists($folderPath . "/" . $file))
 		{
-			error($name . " does not exists!!!");
+			error($file . " does not exists!!!");
 			return;
 		}
 
 
 		# Rename's the file and sends a success message!
 
-		rename($folderPath . "/" . $file, $folderPath . "/" , $name);
+		rename($folderPath . "/" . $file, $folderPath . "/" . $name);
 
 		echo '<div class="alert alert-success"> SUCCESS!!! <br>';
 		echo 'Renamed file ' . $file . ' to ' . $name . '!';
-		echo '<div>';
+		echo '</div>';
 	}
 
 	function deleteFile($file)
 	{
+
+		global $config, $folderPath;
 
 
 		# Checks if the file doesn't exist!
@@ -145,6 +148,8 @@
 
 	function createFile($file)
 	{
+
+		global $config, $folderPath;
 
 
 		# Checks if the fileyou want to create already exists!
@@ -171,6 +176,8 @@
 
 	function uploadFile($file, $customFileName = "")
 	{
+
+		global $config, $folderPath;
 
 
 		# Checks if there were any errors uploading the file,
@@ -254,7 +261,7 @@
 		echo '<div class="alert alert-success"> SUCCESS!!! <br>';
 		echo 'File uploaded! <br>';
 		echo 'Name: ' . $customFileName . '<br>';
-		echo 'Size: ' - $file["size"] . '<br>';
+		echo 'Size: ' . $file["size"] . '<br>';
 		echo '</div>';
 	}
 
